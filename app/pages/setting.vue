@@ -3,6 +3,7 @@ import { defineAsyncComponent, nextTick, ref, watch } from 'vue'
 import { useSettingStore } from '@/core/stores/setting'
 import { getShortcutKey, useEventListener } from '@/core/hooks/event'
 import { checkAndUpgradeSaveDict, checkAndUpgradeSaveSetting, cloneDeep, isEmpty, loadJsLib } from '@/core/utils'
+import { withAppBaseURL } from '@/core/utils/base-url'
 import { BaseButton, BaseInput, BasePage, Form, FormItem, type FormType, PopConfirm, Toast, UploadButton } from '@/base'
 import { useBaseStore } from '@/core/stores/base'
 import {
@@ -433,7 +434,7 @@ async function onSbFirstSyncChoice(action: 'push_local' | 'pull_remote') {
 
 function transferOk() {
   setTimeout(() => {
-    window.location.href = '/words'
+    window.location.href = withAppBaseURL('/words')
   }, 1500)
 }
 
@@ -549,7 +550,7 @@ function removeSbConfig() {
       sbStatus = { status: 'idle', statusMessage: undefined }
       Toast.success(t('clear_success'))
       setTimeout(() => {
-        location.href = '/words'
+        location.href = withAppBaseURL('/words')
       }, 1000)
     }
   })

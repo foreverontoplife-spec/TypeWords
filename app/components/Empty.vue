@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { BaseButton } from '@/base'
+import { withAppBaseURL } from '@/core/utils/base-url'
+
+const emptySrc = withAppBaseURL('/imgs/empty.svg')
 
 defineProps<{
   text?: string
@@ -14,7 +17,7 @@ defineEmits<{
 
 <template>
   <div class="empty">
-    <NuxtImg src="/imgs/empty.svg" alt="" />
+    <img :src="emptySrc" alt="" />
     <span>{{ text ?? $t('empty_placeholder') }}</span>
     <BaseButton v-if="showAdd" @click="$emit('add')">{{ $t('add') }}</BaseButton>
   </div>

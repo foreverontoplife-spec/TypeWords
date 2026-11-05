@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { APP_NAME, GITHUB, Origin } from '@/core/config/env.ts'
+import { withAppBaseURL } from '@/core/utils/base-url'
 import { BaseIcon } from '@/base'
 import { usePlayBeep, usePlayCorrect, usePlayKeyboardAudio } from '@/core/hooks/sound.ts'
 
@@ -154,9 +155,16 @@ const playDemoCorrect = usePlayCorrect()
 
 let mobileMenuOpen = $ref(false)
 
+const miniSrc = withAppBaseURL('/imgs/mini.png')
+const runtimeConfig = useRuntimeConfig()
+const siteHome = $computed(() => {
+  const origin = String(runtimeConfig.public.origin || Origin).replace(/\/$/, '')
+  return new URL(withAppBaseURL('/'), `${origin}/`).toString()
+})
+
 useSeoMeta({
   title: () => 'TypeWords',
-  ogUrl: 'https://typewords.cc/',
+  ogUrl: () => siteHome,
 })
 </script>
 
@@ -313,8 +321,8 @@ useSeoMeta({
             </div>
 
             <div class="mini-qr-card w-full box-border mb-3 flex sm:hidden">
-              <NuxtImg
-                src="/imgs/mini.png"
+              <img
+                :src="miniSrc"
                 :alt="$t('mini_program')"
                 class="w-24 h-24 rounded-xl shrink-0 border border-[var(--hw-border)]"
               />
@@ -363,8 +371,7 @@ useSeoMeta({
             <!-- 网站地址 -->
             <div class="flex justify-center lg:justify-start mt-4">
               <a
-                :href="Origin"
-                target="_blank"
+                :href="siteHome"
                 class="inline-flex items-center gap-1.5 text-[var(--hw-text-3)] no-underline hover:text-[#7c3aed] transition-colors duration-150"
               >
                 <svg
@@ -383,7 +390,7 @@ useSeoMeta({
                     d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
                   />
                 </svg>
-                {{ Origin }}
+                {{ siteHome }}
               </a>
             </div>
           </div>
@@ -516,8 +523,8 @@ useSeoMeta({
 
             <!-- ── 小程序码 — 独立卡片（不再混入 CTA 按钮旁） ── -->
             <div class="mini-qr-card w-full box-border flex">
-              <NuxtImg
-                src="/imgs/mini.png"
+              <img
+                :src="miniSrc"
                 :alt="$t('mini_program')"
                 class="w-24 h-24 rounded-xl shrink-0 border border-[var(--hw-border)]"
               />

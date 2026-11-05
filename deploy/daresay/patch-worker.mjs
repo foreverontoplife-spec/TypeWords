@@ -1,0 +1,78 @@
+import { createHash } from 'node:crypto'
+import { readFileSync, writeFileSync } from 'node:fs'
+
+const baselinePath = process.argv[2]
+const outPath = process.argv[3]
+if (!baselinePath || !outPath) {
+  console.error('usage: node deploy/daresay/patch-worker.mjs <baseline worker.js> <out worker.js>')
+  process.exit(1)
+}
+
+const EXPECTED = '07e0604e77e79d0f2a0bf84b5e16bb8af1c1cf7f5ea0b97365857400e4b80cf8'
+const baseline = readFileSync(baselinePath)
+const sha = createHash('sha256').update(baseline).digest('hex')
+if (sha !== EXPECTED) {
+  console.error('baseline sha256 mismatch', sha)
+  process.exit(1)
+}
+
+let src = baseline.toString('utf8')
+const routes = readFileSync(new URL('./FILES_ROUTES.snapshot.txt', import.meta.url), 'utf8')
+  .split('\n')
+  .map(line => line.trim())
+  .filter(Boolean)
+
+const card =
+  '<a class=\\"card live\\" href=\\"/typewords/\\"><h3>单词打字练习</h3><div class=\\"sub\\">公开 · 独立页面 · 跟打词库</div><p>英语单词打字练习，词库在本站页面内加载。不替换现有课程、登录或其它入口。</p><span class=\\"badge\\">开始练习</span></a>'
+// The homepage script is stored inside a JS string, so its newlines are the two characters \ n.
+// The same course list is inlined in "/", "/read", and "/bible".
+const cardAnchor = '<span class=\\"badge\\">中英对照</span></a>`}\\nasync function route(){const p=location.hash.replace'
+const cardHits = src.split(cardAnchor).length - 1
+if (cardHits !== 3) throw new Error('expected the course-card list 3 times, found ' + cardHits)
+src = src.replaceAll(cardAnchor, card + cardAnchor)
+
+const swAnchor =
+  "self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.origin!==location.origin||u.pathname.startsWith('/api/')||u.pathname.startsWith('/private')"
+if (src.split(swAnchor).length !== 2) throw new Error('service worker anchor is not unique')
+src = src.replace(
+  swAnchor,
+  swAnchor.replace(
+    "u.pathname.startsWith('/private')",
+    "u.pathname.startsWith('/private')||u.pathname==='/typewords'||u.pathname.startsWith('/typewords/')"
+  )
+)
+if (src.split("const V='elh-v12'").length !== 2) throw new Error('service worker version is not unique')
+src = src.replace("const V='elh-v12'", "const V='elh-v13'")
+
+const fetchAnchor = 'async fetch(req,env,ctx){const u=new URL(req.url);let p=u.pathname;if(p==="/index.html")p="/";'
+if (src.split(fetchAnchor).length !== 2) throw new Error('APP.fetch anchor is not unique')
+const handler =
+  'async fetch(req,env,ctx){const u=new URL(req.url);let p=u.pathname;if(p==="/index.html")p="/";' +
+  'if(p==="/typewords"||p.startsWith("/typewords/"))return await serveTypewords(req,env,u,p);'
+src = src.replace(fetchAnchor, handler)
+
+const helper = `async function serveTypewords(req,env,u,p){if(!env.ASSETS||typeof env.ASSETS.fetch!=="function")return new Response("TypeWords assets are not attached",{status:503,headers:{"content-type":"text/plain; charset=utf-8","cache-control":"no-store"}});if(p==="/typewords")return Response.redirect(u.origin+"/typewords/",302);const headers=req.headers;async function pull(pathname){const url=new URL(u.origin+pathname);return env.ASSETS.fetch(new Request(url.toString(),{method:"GET",headers}))}let res=await pull(p);if(res.status!==404)return res;if(!p.endsWith("/")){res=await pull(p+"/index.html");if(res.status!==404)return res;res=await pull(p+".html");if(res.status!==404)return res}else{res=await pull(p+"index.html");if(res.status!==404)return res}const accept=req.headers.get("accept")||"";const dest=req.headers.get("sec-fetch-dest")||"";if(req.method==="GET"&&(dest==="document"||accept.includes("text/html")))return pull("/typewords/index.html");return new Response("Not found",{status:404,headers:{"content-type":"text/plain; charset=utf-8","cache-control":"no-store"}})}
+const APP=`
+if (!src.includes('const APP={async scheduled')) throw new Error('APP object missing')
+src = src.replace('const APP={async scheduled', helper + '{async scheduled')
+
+for (const route of routes) {
+  const key = JSON.stringify(route)
+  if (!src.includes(key + ':')) {
+    throw new Error('missing original FILES route ' + route)
+  }
+}
+for (const keep of ['/daily900', '/kids', '/fau', '走遍美国', '少儿英语', '日常口语900句', 'admGate', 'keep_bindings']) {
+  if (keep === 'keep_bindings') continue
+  if (!src.includes(keep)) throw new Error('missing preserved text ' + keep)
+}
+if (!src.includes('单词打字练习')) throw new Error('card missing')
+if (src.includes('.admin-login')) throw new Error('unexpected admin login path')
+
+writeFileSync(outPath, src)
+console.log(JSON.stringify({
+  baselineBytes: baseline.length,
+  patchedBytes: Buffer.byteLength(src),
+  patchedSha256: createHash('sha256').update(src).digest('hex'),
+  routesPreserved: routes.length,
+}, null, 2))

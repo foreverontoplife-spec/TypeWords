@@ -4,6 +4,7 @@ import { ref, watch } from 'vue'
 import { get } from 'idb-keyval'
 import { Audio } from '@/base'
 import { ENV, LOCAL_FILE_KEY } from '@/core/config/env.ts'
+import { withAppBaseURL } from '@/core/utils/base-url'
 
 const props = defineProps<{
   article: Article
@@ -115,7 +116,7 @@ defineExpose(
     v-bind="$attrs"
     ref="instance"
     v-if="props.article.audioSrc"
-    :src="ENV.RESOURCE_URL + props.article.audioSrc"
+    :src="withAppBaseURL(ENV.RESOURCE_URL + props.article.audioSrc)"
     @ended="emit('ended')"
     @update-volume="handleVolumeUpdate"
     @update-speed="handleSpeedUpdate"
