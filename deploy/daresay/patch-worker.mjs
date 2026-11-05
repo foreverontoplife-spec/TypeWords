@@ -48,11 +48,11 @@ const fetchAnchor = 'async fetch(req,env,ctx){const u=new URL(req.url);let p=u.p
 if (src.split(fetchAnchor).length !== 2) throw new Error('APP.fetch anchor is not unique')
 const handler =
   'async fetch(req,env,ctx){const u=new URL(req.url);let p=u.pathname;if(p==="/index.html")p="/";' +
-  'if(p==="/typewords"||p.startsWith("/typewords/"))return await serveTypewords(req,env,u,p);'
+  'if(p==="/typewords"||p.startsWith("/typewords/"))return await serveTypewords(req,env,ctx,u,p);'
 src = src.replace(fetchAnchor, handler)
 
-const helper = `async function serveTypewords(req,env,u,p){if(!env.ASSETS||typeof env.ASSETS.fetch!=="function")return new Response("TypeWords assets are not attached",{status:503,headers:{"content-type":"text/plain; charset=utf-8","cache-control":"no-store"}});if(p==="/typewords")return Response.redirect(u.origin+"/typewords/",302);const headers=req.headers;async function pull(pathname){const url=new URL(u.origin+pathname);return env.ASSETS.fetch(new Request(url.toString(),{method:"GET",headers}))}let res=await pull(p);if(res.status!==404)return res;if(!p.endsWith("/")){res=await pull(p+"/index.html");if(res.status!==404)return res;res=await pull(p+".html");if(res.status!==404)return res}else{res=await pull(p+"index.html");if(res.status!==404)return res}const accept=req.headers.get("accept")||"";const dest=req.headers.get("sec-fetch-dest")||"";if(req.method==="GET"&&(dest==="document"||accept.includes("text/html")))return pull("/typewords/index.html");return new Response("Not found",{status:404,headers:{"content-type":"text/plain; charset=utf-8","cache-control":"no-store"}})}
-const APP=`
+const helper =
+  readFileSync(new URL('./typewords-kv-handler.js', import.meta.url), 'utf8').trim() + '\nconst APP='
 if (!src.includes('const APP={async scheduled')) throw new Error('APP object missing')
 src = src.replace('const APP={async scheduled', helper + '{async scheduled')
 

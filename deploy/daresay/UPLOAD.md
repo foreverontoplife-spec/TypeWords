@@ -1,87 +1,117 @@
 # Deploy TypeWords on english-learning-hub
 
-This is an additive deploy of the live Worker `english-learning-hub` version #226
+Additive deploy of live Worker `english-learning-hub` version **#226**
 (`c5d5e554-e3ac-4bfc-a71e-1b554712a3e4`). It does not replace the site.
 
-Do not upload unless `worker.js` still has SHA256
+Do not upload unless the unpacked `worker.js` still has SHA256
 `07e0604e77e79d0f2a0bf84b5e16bb8af1c1cf7f5ea0b97365857400e4b80cf8`
 before the patch. Do not use the November 2 disk baseline.
+
+The Static Assets upload session is not used. This connector can create that
+session but cannot send the session JWT to `assets/upload`. TypeWords is stored
+in a new Workers KV namespace and read only through the `TYPEWORDS_ASSETS` binding.
 
 ## What is preserved
 
 - Every existing `FILES` key and route
-- Auth, admin gate, Turnstile, D1, KV, AI, and R2 bindings
+- Auth, admin gate, Turnstile, D1, the existing `KV` binding, AI, and R2 bindings
 - Binding values already stored on Cloudflare (`keep_bindings`)
 - R2 bucket `english-zbmg` is not read or written
+- The existing KV namespace is not listed, read, or written
 - Workers `aurora-8a6f4c`, `falling-butterfly-5ed1`, `noisy-scene-f2a3`, and `bible-zh-en` are not used
 
-## Why static assets
+## Free-tier KV budget
 
-The current module is about 3.9 MB. The TypeWords browser build, including the CET-4 dictionary, is larger than that. Inlining it into `FILES` would push Worker startup (1 second parse limit) and make later edits of the learning site rewrite a huge module.
+Workers KV on the free plan, reset 00:00 UTC:
 
-Workers Static Assets are available on the free plan. Asset requests are not billed as Worker requests. The patched module only adds the homepage card and a `/typewords` handler. Existing requests never call `env.ASSETS`.
+| Limit | This deploy |
+| --- | --- |
+| Stored data, 1 GB per account and per namespace | 11,116,233 bytes (about 10.6 MiB) |
+| Value size, 25 MiB | Largest file is the CET-4 dictionary, 4,487,640 bytes |
+| Writes to different keys, 1,000 per day | 175 keys, one write each |
+| Bulk request, 10,000 pairs and 100 MB | Three PUT bodies, each under 8 MB |
+| Reads, 100,000 per day | One read per uncached file. Hashed `/_nuxt/` files are cached |
+| List requests, 1,000 per day | Not used. Do not list the namespace |
+| Namespaces, 1,000 per account | One new namespace, title `TYPEWORDS_ASSETS` |
 
-`compatibility_date` stays `2026-10-01`. Files are stored under the `/typewords/` prefix inside the asset manifest, so `base_path` stays `/`.
+A retried full seed spends another 175 writes. Five full seeds in one UTC day stay under 1,000. Do not loop the upload. Writes to the same key are also limited to one per second; the batches write each key once.
 
-`run_worker_first` stays false. Requests that match a file under `/typewords/` are served as static assets and do not spend a Worker invocation. Every other path, including the current site and `/typewords` client routes that have no file, still enters the existing Worker. The manifest contains no `/` or `/index.html`, so the homepage in `FILES["/"]` is unchanged.
+Each `/typewords/` request still invokes the Worker, so it counts toward the Workers free daily request limit as well as a KV read when the Cache API misses. Repeat views of `/_nuxt/` files are served from `caches.default` and do not read KV again in that location.
 
-## Build
+## Order
 
-From this repository:
+1. Create the namespace. Do not upload the Worker yet.
+2. PUT the three bulk files. Confirm each response has no keys to retry.
+3. GET two known keys in the new namespace only.
+4. Upload the patched Worker with `keep_bindings` and the new binding.
 
-```bash
-node deploy/daresay/build-subpath.mjs
-node deploy/daresay/patch-worker.mjs /path/to/v226/worker.js /tmp/english-learning-hub.worker.js
-node --check /tmp/english-learning-hub.worker.js
+### 1. Create the namespace
+
+`POST /accounts/{account_id}/storage/kv/namespaces`
+
+```json
+{ "title": "TYPEWORDS_ASSETS" }
 ```
 
-`dist-typewords/typewords/` is the asset directory.
-`dist-typewords/assets-manifest.json` lists Cloudflare asset hashes: SHA-256 of the raw bytes, first 32 hex characters, paths such as `/typewords/index.html`.
+Use the returned `result.id` as `namespace_id`. This is an empty namespace. Do not reuse the existing site KV id.
 
-## Upload
+### 2. Write the files
 
-Account API token needs Workers Scripts write. No new paid plan.
+For each `typewords-kv-bulk-00N.json`:
 
-1. `POST /accounts/{account_id}/workers/scripts/english-learning-hub/assets-upload-session`
-   with body `{ "manifest": <dist-typewords/assets-manifest.json> }`.
-2. For each hash bucket in the response, `POST /accounts/{account_id}/workers/assets/upload?base64=true`
-   using the session JWT as `Authorization: Bearer`. Each part name is the hash and the part body is standard base64 of the raw file. The last response returns the completion JWT (valid 1 hour).
-3. `PUT /accounts/{account_id}/workers/scripts/english-learning-hub`
-   as `multipart/form-data`:
+`PUT /accounts/{account_id}/storage/kv/namespaces/{namespace_id}/bulk`
+
+`Content-Type: application/json`
+
+The body is a JSON array. Each item is `{ "key", "value", "base64": true, "metadata": { "contentType" } }`. `value` is standard base64 of the raw file. The API decodes it before storing. Keys are `typewords/...` with no leading slash.
+
+Official limits: at most 10,000 pairs and 100 MB per request. These batches are inside both.
+
+### 3. Verify before the Worker upload
+
+In the new namespace only:
+
+- `GET /accounts/{account_id}/storage/kv/namespaces/{namespace_id}/values/typewords%2Findex.html`
+- `GET /accounts/{account_id}/storage/kv/namespaces/{namespace_id}/values/typewords%2Fdicts%2Fen%2Fword%2FCET4_T.json`
+
+Compare the body SHA256 with `typewords-kv-manifest.json`. Do not call the list API, and do not read the existing `KV` namespace.
+
+### 4. Upload the Worker
+
+`PUT /accounts/{account_id}/workers/scripts/english-learning-hub`
+
+Multipart form:
+
+- `metadata` from `worker-upload-metadata.json`, with `namespace_id` filled in
+- `worker.js` = patched `english-learning-hub.worker.js` (`application/javascript+module`)
 
 ```json
 {
   "main_module": "worker.js",
   "compatibility_date": "2026-10-01",
   "keep_bindings": ["secret_text", "plain_text", "r2_bucket", "d1", "kv_namespace", "ai"],
-  "bindings": [{ "type": "assets", "name": "ASSETS" }],
-  "assets": {
-    "jwt": "<completion jwt>",
-    "config": {
-      "html_handling": "none",
-      "not_found_handling": "none",
-      "run_worker_first": false
-    }
-  }
+  "bindings": [
+    { "type": "kv_namespace", "name": "TYPEWORDS_ASSETS", "namespace_id": "<new namespace id>" }
+  ]
 }
 ```
 
-Attach the patched script as the `worker.js` part (`Content-Type: application/javascript+module`).
+`keep_bindings` retains the existing secret, plain text, R2, D1, KV, and AI values. The bindings array adds only `TYPEWORDS_ASSETS`. Do not resend the existing `KV` namespace and do not send secret values.
 
-`keep_bindings` retains the existing secret, plain text, R2, D1, KV, and AI values. Do not resend those values. The only new binding is `ASSETS`. Do not set `base_path`.
+Later script uploads must keep both `kv_namespace` in `keep_bindings` and must not drop `TYPEWORDS_ASSETS`.
 
-Later script-only uploads must send `keep_assets: true` and keep the `ASSETS` binding, or this page loses its files.
+## Build again
 
-Confirm the new version is at 100% traffic. Check:
-
-- `https://daresay.app/` still lists 日常口语900句, 少儿英语, and 走遍美国, and adds 单词打字练习
-- `https://daresay.app/typewords/` loads the practice app
-- `https://daresay.app/typewords/list/word.json` and `.../dicts/en/word/CET4_T.json` return JSON
-- An existing route such as `/daily900` and login still behave as before
+```bash
+node deploy/daresay/build-subpath.mjs
+node deploy/daresay/build-kv-seed.mjs
+node deploy/daresay/patch-worker.mjs /path/to/v226/worker.js /tmp/english-learning-hub.worker.js
+node --check /tmp/english-learning-hub.worker.js
+```
 
 ## License
 
 TypeWords is GPL-3.0. This modified version's corresponding source is
 https://github.com/foreverontoplife-spec/TypeWords
 The served app links to that repository, `LICENSE.txt`, and `DATA-NOTICES.txt`.
-New Concept English lesson text and audio are not in the static bundle.
+New Concept English lesson text and audio are not in the KV seed.
