@@ -66,6 +66,20 @@ for (const keep of ['/daily900', '/kids', '/fau', '走遍美国', '少儿英语'
   if (keep === 'keep_bindings') continue
   if (!src.includes(keep)) throw new Error('missing preserved text ' + keep)
 }
+const modsOld = "['/voa','voa','美国之音','82 节视频课 · L1–L2']];"
+const modsNew =
+  "['/voa','voa','美国之音','82 节视频课 · L1–L2'],['/typewords/','','单词打字练习','跟打词库 · 本地练习']];"
+if (src.split(modsOld).length !== 2) throw new Error('MODS anchor is not unique')
+src = src.replace(modsOld, modsNew)
+const iconOld = "+'><span class=\\\"mi\\\">'+(m[4]?"
+const iconNew = "+'>'+(m[1]?'<span class=\\\"mi\\\">'+(m[4]?"
+if (src.split(iconOld).length !== 2) throw new Error('icon opener is not unique')
+src = src.replace(iconOld, iconNew)
+const iconCloseOld = ":ic(m[1]))+'</span><b>'"
+const iconCloseNew = ":ic(m[1]))+'</span>':'')+'<b>'"
+if (src.split(iconCloseOld).length !== 2) throw new Error('icon closer is not unique')
+src = src.replace(iconCloseOld, iconCloseNew)
+if (!src.includes("['/typewords/','','单词打字练习','跟打词库 · 本地练习']")) throw new Error('visible card missing')
 if (!src.includes('单词打字练习')) throw new Error('card missing')
 if (src.includes('.admin-login')) throw new Error('unexpected admin login path')
 
