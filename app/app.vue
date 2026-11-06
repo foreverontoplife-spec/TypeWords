@@ -3,7 +3,13 @@ const route = useRoute()
 const runtimeConfig = useRuntimeConfig()
 const siteOrigin = String(runtimeConfig.public.origin || 'https://typewords.cc').replace(/\/$/, '')
 
-const canonicalURL = $computed(() => new URL(route.path, `${siteOrigin}/`).toString())
+const canonicalURL = $computed(() => {
+  const path = route.path && route.path.startsWith('/') ? route.path : `/${route.path || ''}`
+  const base = String(useRuntimeConfig().app.baseURL || '/')
+  const prefix = base === '/' ? '' : base.replace(/\/$/, '')
+  const rooted = path === '/' ? `${prefix}/` : `${prefix}${path}`
+  return new URL(rooted || '/', `${siteOrigin}/`).toString()
+})
 
 const nonIndexableRoutePrefixes = [
   '/fsrs',

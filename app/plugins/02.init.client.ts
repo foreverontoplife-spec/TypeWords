@@ -1,21 +1,10 @@
 //@ts-ignore
 import VueVirtualScroller from 'vue-virtual-scroller'
-import { ENV } from '@/core/config/env.ts'
 import { withAppBaseURL } from '@/core/utils/base-url'
 
 export default defineNuxtPlugin(async nuxtApp => {
-  if (
-    !location.href.includes('localhost') &&
-    !location.href.includes('192.168') &&
-    !location.href.includes('172.16') &&
-    !location.href.includes('10.0')
-  ) {
-    ;(function () {
-      var t = document.createElement('script')
-      t.src = ENV.LIBS_URL + 't.js?t=' + Date.now()
-      document.head.appendChild(t)
-    })()
-  }
+  // t.js pulls Baidu analytics, 51.la, and umami from typewords.cc.
+  // This independent deployment does not load those trackers.
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

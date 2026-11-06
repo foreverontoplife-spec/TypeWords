@@ -1,0 +1,13 @@
+TypeWords
+Copyright (C) zyronon and contributors
+
+This copy is modified (2026-11-05) to run at /typewords/ on daresay.app.
+It is free software under GNU GPL-3.0, with no warranty.
+
+Upstream: https://github.com/zyronon/TypeWords
+Corresponding source for this modified version:
+https://github.com/foreverontoplife-spec/TypeWords
+
+The full license is served next to this file as LICENSE.txt.
+Third-party dictionary and textbook data are not covered by the GPL.
+See DATA-NOTICES.txt.

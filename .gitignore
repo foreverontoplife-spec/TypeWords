@@ -26,6 +26,7 @@ report.html
 
 # Nuxt dev/build outputs
 .output
+dist-typewords
 .data
 .nuxt
 .nitro

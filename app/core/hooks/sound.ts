@@ -3,6 +3,7 @@ import { useSettingStore } from '../stores/setting'
 import { ref } from 'vue'
 
 import { ENV, PronunciationApi, SoundFileOptions } from '../config/env'
+import { withAppBaseURL } from '../utils/base-url'
 import { Toast } from '@/base'
 
 /**
@@ -58,7 +59,7 @@ export function useSound(audioSrcList?: string[], audioFileLength?: number) {
     if (audioFileLength2) audioLength.value = audioFileLength2
     audioList.value = []
     for (let i = 0; i < audioLength.value; i++) {
-      audioSrcList2.map(src => audioList.value.push(new Audio(ENV.RESOURCE_URL + src)))
+      audioSrcList2.map(src => audioList.value.push(new Audio(withAppBaseURL(ENV.RESOURCE_URL + src))))
     }
     index.value = 0
   }
@@ -296,14 +297,14 @@ export function usePlayAudio(url: string) {
 }
 
 export function getAudioFileUrl(name: string) {
-  if (name === '机械键盘') {
-    return [
-      `/sound/key-sounds/jixie/机械0.mp3`,
-      `/sound/key-sounds/jixie/机械1.mp3`,
-      `/sound/key-sounds/jixie/机械2.mp3`,
-      `/sound/key-sounds/jixie/机械3.mp3`,
-    ]
-  } else {
-    return [`/sound/key-sounds/${name}.mp3`]
-  }
+  const files =
+    name === '机械键盘'
+      ? [
+          `/sound/key-sounds/jixie/机械0.mp3`,
+          `/sound/key-sounds/jixie/机械1.mp3`,
+          `/sound/key-sounds/jixie/机械2.mp3`,
+          `/sound/key-sounds/jixie/机械3.mp3`,
+        ]
+      : [`/sound/key-sounds/${name}.mp3`]
+  return files.map(file => withAppBaseURL(ENV.RESOURCE_URL + file))
 }

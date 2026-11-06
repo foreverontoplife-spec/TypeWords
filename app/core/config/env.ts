@@ -1,8 +1,12 @@
 import { offset } from '@floating-ui/dom'
+import { withAppBaseURL } from '../utils/base-url'
 //这里合并导入，打包会报错
 import { ShortcutKey, WordPracticeMode, WordPracticeStage } from '../types/enum.ts'
 
 export const GITHUB = 'https://github.com/zyronon/TypeWords'
+export const UPSTREAM_REPOSITORY = GITHUB
+export const SOURCE_REPOSITORY = 'https://github.com/foreverontoplife-spec/TypeWords'
+export const PROGRAM_MODIFIED = '2026-11-05'
 export const Host = 'typewords.cc'
 export const Old_Host = '2study.top'
 export const EMAIL = 'zyronon@163.com'
@@ -89,10 +93,10 @@ export const TourConfig = {
 }
 
 export const LIB_JS_URL = {
-  SHEPHERD: `${ENV.LIBS_URL}/Shepherd.14.5.1.mjs.js`,
-  SNAPDOM: `${ENV.LIBS_URL}/snapdom.min.js`,
-  JSZIP: `${ENV.LIBS_URL}/jszip.min.js`,
-  XLSX: `${ENV.LIBS_URL}/xlsx.full.min.js`,
+  SHEPHERD: withAppBaseURL(`${ENV.LIBS_URL}Shepherd.14.5.1.mjs.js`),
+  SNAPDOM: withAppBaseURL(`${ENV.LIBS_URL}snapdom.min.js`),
+  JSZIP: withAppBaseURL(`${ENV.LIBS_URL}jszip.min.js`),
+  XLSX: withAppBaseURL(`${ENV.LIBS_URL}xlsx.full.min.js`),
 }
 export const PronunciationApi = 'https://dict.youdao.com/dictvoice?audio='
 export const DefaultShortcutKeyMap = {

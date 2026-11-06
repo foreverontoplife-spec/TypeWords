@@ -1,0 +1,34 @@
+Third-party data shipped with this TypeWords deployment
+=======================================================
+
+The TypeWords program is GNU GPL-3.0. The files below are data, not
+program source, and this notice does not relicense them.
+
+CET-4 word list
+  public/dicts/en/word/CET4_T.json
+  public/list/word.json
+  public/list/recommend_word.json
+  This list (headwords, phonetics, short glosses, example sentences,
+  and etymology notes) is the dictionary already published in the
+  upstream TypeWords tree. It is loaded locally so typing practice
+  works without calling typewords.cc. Treat the text as third-party
+  lexical data. Do not assume it is GPL-3.0.
+
+New Concept English lesson text and audio
+  public/dicts/en/article/NCE_1.json
+  public/sound/article/nce1/*
+  Those textbook transcripts and recordings are omitted from the
+  daresay.app static bundle. Article practice in the program still
+  runs, and you can import your own texts. The files remain in the
+  corresponding source tree because they came with the upstream
+  project; publishing them again on this site is not part of this
+  deployment.
+
+Pronunciation playback
+  Pressing the speaker asks the browser to request audio from
+  https://dict.youdao.com/dictvoice . That call is optional, happens
+  only after you play a word, and is unchanged from upstream. Typing
+  practice does not depend on it.
+
+This deployment does not load typewords.cc analytics, Baidu analytics,
+or 51.la.

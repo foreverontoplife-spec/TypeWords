@@ -49,7 +49,8 @@ const appBaseURL = normalizeBaseURL(process.env.NUXT_APP_BASE_URL || '/')
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.TYPEWORDS_STATIC === '1' ? false : true },
+  ssr: process.env.TYPEWORDS_STATIC === '1' ? false : true,
   app: {
     baseURL: appBaseURL,
     // keepalive: true,
@@ -58,7 +59,7 @@ export default defineNuxtConfig({
       htmlAttrs: {
         lang: 'zh-CN',
       },
-      link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+      link: [{ rel: 'icon', type: 'image/x-icon', href: withBaseURL('/favicon.ico', appBaseURL) }],
     },
   },
   // ssr: false,

@@ -1,0 +1,31 @@
+TypeWords
+Copyright (C) zyronon and contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+Modification notice
+-------------------
+Modified: 2026-11-05
+Modified by: foreverontoplife-spec
+What changed: adapted this copy to run as an independent static app at
+https://daresay.app/typewords/ (subpath base URL, no redirect to
+typewords.cc, no upstream analytics loaders). The practice program
+itself is otherwise the upstream TypeWords application.
+
+Upstream project: https://github.com/zyronon/TypeWords
+Corresponding source for this modified version:
+https://github.com/foreverontoplife-spec/TypeWords
+
+Lexical data, textbook text, and recordings shipped beside the program
+are not part of the GPL-covered code. See DATA-NOTICES.txt.
